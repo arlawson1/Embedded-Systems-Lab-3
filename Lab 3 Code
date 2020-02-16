@@ -1,0 +1,94 @@
+// This code was written by
+// Andrew Lawson (CWID 1187 8092)
+// on 2-16-2020
+
+// This program takes input from the serial monitor (in the form of an int
+// ranging from 0 to 15) and repeats it back to the user in hexadecimal.
+// The program records the users reaction time (from time of prompt til
+// time of input), and displays it to the user.
+// The program only waits for input for 4 seconds before informing the
+// user of the watchdog timer timing out and rebooting the board.
+
+// Watchdog timer header file
+#include <avr/wdt.h>
+
+
+// start of setup code
+// code to set up hardware/software
+void setup() {
+  watchdogSetup();
+  Serial.begin(9600);
+  // Used to deal with Serial.parseInt having a default timeout
+  // when only integers are entered into the input
+  Serial.setTimeout(5);
+  Serial.print("Enter a value 0-15. Program will time out after 4 seconds.\n");
+}
+// end of setup code
+
+// changing watchdog timer settings
+void watchdogSetup(void){
+  // turn off interrupts during setup
+  cli();
+  // safety reset
+  wdt_reset();
+  // enter watchdog register configuration mode
+  WDTCSR |= (1 <<WDCE) | (1<<WDE);
+  // WDIE (interrupts) enabled
+  // WDE (watchdog timer) enabled
+  // WDP 3210 = 1000 (4s time-out)
+  WDTCSR = (1<<WDIE)|(1<<WDE)|(1<<WDP3)|(0<<WDP2)|(0<<WDP1)|(0<<WDP0);
+  // re-enable interrupts
+  sei();
+}
+
+
+// start of loop code
+// code meant to loop continuously
+void loop() {
+  // initialized to -1 to loop code more easily
+  long userInput = -1;
+  unsigned long timeOld = 0;
+  unsigned long timeNew = 0;
+  unsigned long reactionTime = 0;
+  unsigned long reactionTimeInSeconds = 0;
+  unsigned long reactionTimeInMilliseconds = 0;
+  while(1){
+    if(Serial.available() > 0){
+      userInput = Serial.parseInt();
+      if(userInput >= 0 && userInput <= 15){
+        Serial.println(userInput, HEX);
+        Serial.print("reaction time = ");
+        timeNew = millis();
+        reactionTime = timeNew - timeOld;
+        reactionTimeInSeconds = reactionTime / 1000;
+        reactionTimeInMilliseconds = reactionTime % 1000;
+        Serial.print(reactionTimeInSeconds);
+        Serial.print(".");
+        Serial.println(reactionTimeInMilliseconds);
+        timeOld = timeNew;
+        Serial.print("Enter a value 0-15. Program will time out after 4 seconds.\n");
+        wdt_reset();
+      }
+      else if(userInput == -1){}
+      else{
+        Serial.println("Invalid input. Only input a number 0-15.");
+        timeNew = millis();
+        reactionTime = timeNew - timeOld;
+        timeOld = timeNew;
+        wdt_reset();
+      }
+    }
+  }
+}
+// end of loop code
+
+// Watchdog timer interrupt used to blink the decimal on the 7-seg display
+ISR(WDT_vect){
+  Serial.println("Watchdog timer expired, rebooting.");
+  for(int i = 0; i < 4; i++){
+    // turn on decimal point for .5 sec, then turn off for .5 sec
+    delay(500);
+    
+    delay(500);
+  }
+}

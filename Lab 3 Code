@@ -85,7 +85,7 @@ void loop() {
 // Watchdog timer interrupt used to blink the decimal on the 7-seg display
 ISR(WDT_vect){
   Serial.println("Watchdog timer expired, rebooting.");
-  for(int i = 0; i < 4; i++){
+  for(int i = 0; i < 5; i++){
     // turn on decimal point for .5 sec, then turn off for .5 sec
     delay(500);
     

@@ -129,7 +129,7 @@ void loop() {
   // Initialize 7-segment display class
   TM1637Display display(CLK, DIO);
 
-  // Set brightness level
+  // Set brightness level to max
   display.setBrightness(0x0F);
 
   // Initialize display to - --
@@ -139,7 +139,6 @@ void loop() {
   display.setSegments(data);
   
   
-  // initialized to -1 to loop code more easily
   int userInput = -1;
   int timeOld = 0;
   int timeNew = 0;

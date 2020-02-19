@@ -38,10 +38,10 @@
 // Defines for blank & full section
 #define BLANK 0x00
 #define FULL 0xff
-#define BAR 0x40
+#define BAR 0x49
 
 // print function for seven segment display
-  void sevenSegmentDisplay(int sevenSegNum, uint8_t data[],TM1637Display display){
+  void SevenSegDisplay(int sevenSegNum, uint8_t data[],TM1637Display display){
       if(sevenSegNum == 0){
          data[3] = ZERO;
       }
@@ -133,7 +133,7 @@ void loop() {
   display.setBrightness(0x0F);
 
   // Initialize display to - --
-  uint8_t data[] = { BLANK, BAR, BAR, BAR };
+  uint8_t data[] = { BLANK, BLANK, BLANK, BAR };
 
   // Send data[] to display
   display.setSegments(data);
@@ -164,7 +164,7 @@ void loop() {
         timeOld = timeNew;
         data[1] = BLANK;
         data[2] = BLANK;
-        sevenSegmentDisplay(userInput, data, display);
+        SevenSegDisplay(userInput, data, display);
         Serial.print("Enter a value 0-15. Program will time out after 4 seconds.\n");
         wdt_reset();
       }
@@ -176,10 +176,8 @@ void loop() {
         timeNew = millis();
         reactionTime = timeNew - timeOld;
         timeOld = timeNew;
-        data[1] = BAR;
-        data[2] = BAR;
         data[3] = BAR;
-        sevenSegmentDisplay(userInput, data, display);
+        SevenSegDisplay(userInput, data, display);
         wdt_reset();
       }
     }

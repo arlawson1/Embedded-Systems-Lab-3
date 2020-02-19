@@ -11,6 +11,87 @@
 
 // Watchdog timer header file
 #include <avr/wdt.h>
+// Library containing 7-segment display functions
+#include <TM1637Display.h>
+
+
+// Module connection pins (Digital Pins)
+#define CLK 2
+#define DIO 3
+// Defines for numbers 0-16 in hexadecimal
+#define ZERO 0x3f
+#define ONE 0x06
+#define TWO 0x5b
+#define THREE 0x4f
+#define FOUR 0x66
+#define FIVE 0x6d
+#define SIX 0x7d
+#define SEVEN 0x27
+#define EIGHT 0x7f
+#define NINE 0x67
+#define LETTER_a 0x5f
+#define LETTER_b 0x7c
+#define LETTER_c 0x58
+#define LETTER_d 0x5e
+#define LETTER_e 0x7b
+#define LETTER_f 0x71
+// Defines for blank & full section
+#define BLANK 0x00
+#define FULL 0xff
+#define BAR 0x40
+
+// print function for seven segment display
+  void sevenSegmentDisplay(int sevenSegNum, uint8_t data[],TM1637Display display){
+      if(sevenSegNum == 0){
+         data[3] = ZERO;
+      }
+      else if(sevenSegNum == 1){
+         data[3] = ONE;
+      }
+      else if(sevenSegNum == 2){
+         data[3] = TWO;
+      }
+      else if(sevenSegNum == 3){
+         data[3] = THREE;
+      }
+      else if(sevenSegNum == 4){
+         data[3] = FOUR;
+      }
+      else if(sevenSegNum == 5){
+         data[3] = FIVE;
+      }
+      else if(sevenSegNum == 6){
+         data[3] = SIX;
+      }
+      else if(sevenSegNum == 7){
+         data[3] = SEVEN;
+      }
+      else if(sevenSegNum == 8){
+         data[3] = EIGHT;
+      }
+      else if(sevenSegNum == 9){
+         data[3] = NINE;
+      }
+      else if(sevenSegNum == 10){
+         data[3] = LETTER_a;
+      }
+      else if(sevenSegNum == 11){
+         data[3] = LETTER_b;
+      }
+      else if(sevenSegNum == 12){
+         data[3] = LETTER_c;
+      }
+      else if(sevenSegNum == 13){
+         data[3] = LETTER_d;
+      }
+      else if(sevenSegNum == 14){
+         data[3] = LETTER_e;
+      }
+      else if(sevenSegNum == 15){
+         data[3] = LETTER_f;
+      }
+      display.setSegments(data);
+  }
 
 
 // start of setup code
@@ -45,17 +126,33 @@ void watchdogSetup(void){
 // start of loop code
 // code meant to loop continuously
 void loop() {
+  // Initialize 7-segment display class
+  TM1637Display display(CLK, DIO);
+
+  // Set brightness level
+  display.setBrightness(0x0F);
+
+  // Initialize display to - --
+  uint8_t data[] = { BLANK, BAR, BAR, BAR };
+
+  // Send data[] to display
+  display.setSegments(data);
+  
+  
   // initialized to -1 to loop code more easily
-  long userInput = -1;
-  unsigned long timeOld = 0;
-  unsigned long timeNew = 0;
-  unsigned long reactionTime = 0;
-  unsigned long reactionTimeInSeconds = 0;
-  unsigned long reactionTimeInMilliseconds = 0;
+  int userInput = -1;
+  int timeOld = 0;
+  int timeNew = 0;
+  int reactionTime = 0;
+  int reactionTimeInSeconds = 0;
+  int reactionTimeInMilliseconds = 0;
   while(1){
     if(Serial.available() > 0){
+      userInput = -1;
       userInput = Serial.parseInt();
       if(userInput >= 0 && userInput <= 15){
+        // So WDT doesn't reboot during serial output
+        wdt_reset();
         Serial.println(userInput, HEX);
         Serial.print("reaction time = ");
         timeNew = millis();
@@ -66,15 +163,24 @@ void loop() {
         Serial.print(".");
         Serial.println(reactionTimeInMilliseconds);
         timeOld = timeNew;
+        data[1] = BLANK;
+        data[2] = BLANK;
+        sevenSegmentDisplay(userInput, data, display);
         Serial.print("Enter a value 0-15. Program will time out after 4 seconds.\n");
         wdt_reset();
       }
-      else if(userInput == -1){}
+      else if(userInput == -1){
+      }
       else{
+        wdt_reset();
         Serial.println("Invalid input. Only input a number 0-15.");
         timeNew = millis();
         reactionTime = timeNew - timeOld;
         timeOld = timeNew;
+        data[1] = BAR;
+        data[2] = BAR;
+        data[3] = BAR;
+        sevenSegmentDisplay(userInput, data, display);
         wdt_reset();
       }
     }
@@ -84,11 +190,22 @@ void loop() {
 
 // Watchdog timer interrupt used to blink the decimal on the 7-seg display
 ISR(WDT_vect){
-  Serial.println("Watchdog timer expired, rebooting.");
-  for(int i = 0; i < 5; i++){
-    // turn on decimal point for .5 sec, then turn off for .5 sec
-    delay(500);
-    
-    delay(500);
+  Serial.println("REBOOTING.");
+  uint8_t data[] = {BLANK, BLANK, BLANK, BLANK };
+  // Initialize 7-segment display class
+  TM1637Display display(CLK, DIO);
+
+  // Set brightness level
+  display.setBrightness(0x0F);
+  
+  for(int i = 0; i < 4; i++){
+    // turn on colon for .5 sec, then turn off for .5 sec
+    delay(100000);
+    // 0x80 = ":"
+    data[1] = 0X80;
+    display.setSegments(data);
+    delay(100000);
+    data[1] = BLANK;
+    display.setSegments(data);
   }
 }
